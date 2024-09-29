@@ -1,9 +1,12 @@
 from flask import Flask, jsonify
 from Model.Stock import Stock
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.base import STATE_RUNNING
 import random
 
 import os
+
+UPDATE_TIME_MINUTES = 10
 
 app = Flask(__name__)
 
@@ -23,20 +26,24 @@ def update_stock_prices():
 
 # Initialize the scheduler
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=update_stock_prices, trigger="interval", minutes=1)
-scheduler.start()
+scheduler.add_job(func=update_stock_prices, trigger="interval", minutes=UPDATE_TIME_MINUTES)
 
-
-
-# Shut down the scheduler when the app exits
 @app.before_first_request
-def init_scheduler():
-    # You can put any additional startup logic here
-    print("Scheduler has been initialized and started.")
+def start_scheduler_on_startup():
+    if scheduler.state != STATE_RUNNING:
+        scheduler.start()
+        print("Scheduler started.")
 
-@app.teardown_appcontext
-def shutdown_scheduler(exception=None):
-    scheduler.shutdown()
+# @app.teardown_appcontext
+# def shutdown_scheduler_on_teardown(exception=None):
+#     if scheduler.state == STATE_RUNNING:
+#         scheduler.shutdown()
+#         print("Scheduler shut down.")
+
+def start_scheduler():
+    if scheduler.state != STATE_RUNNING:
+        scheduler.start()
+        print("Scheduler started.")
 
 @app.route('/')
 def index():
