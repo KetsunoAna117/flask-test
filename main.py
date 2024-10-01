@@ -1,15 +1,15 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, jsonify
 from flask_socketio import SocketIO, emit
 from Model.Stock import Stock
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import STATE_RUNNING
 import random
-import eventlet
 import os
 
-eventlet.monkey_patch()
-
-UPDATE_TIME_SECONDS = 10
+UPDATE_TIME_SECONDS = 5
 
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode="eventlet")
@@ -49,16 +49,28 @@ def start_scheduler_on_startup():
 def handle_connect():
     print("Client connected")
 
+    # Optional: Add a small delay to ensure the client is ready to receive the event
+    socketio.sleep(1)  # Sleep for 1 second
+
+    stock_list = [stock.to_dict() for stock in stock_data]
+    socketio.emit('update_stock', stock_list)
+
 @socketio.on('disconnect')
 def handle_disconnect():
     print("Client disconnected")
 
 @socketio.on('user_input')
 def handle_user_input(data):
-    socketio.emit('user_input_response', "Received user input: " + data)
+    with app.app_context():
+        socketio.emit('user_input_response', "Received user input: " + data)
     print("User input received: ", data)
+
+@app.route('/stock', methods=['GET'])
+def get_stock():
+    stock_list = [stock.to_dict() for stock in stock_data]
+    return jsonify(stock_list)
 
 if __name__ == '__main__':
     start_scheduler_on_startup()
-    port = int(os.environ.get("PORT", 5001))
-    socketio.run(app, debug=True, port=port, use_reloader=False, host="0.0.0.0")
+    port_ws = int(os.environ.get("PORT", 5001))
+    socketio.run(app, debug=True, port=port_ws, use_reloader=False)
