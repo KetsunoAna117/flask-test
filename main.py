@@ -1,3 +1,4 @@
+import select
 import eventlet
 eventlet.monkey_patch()
 
@@ -8,28 +9,71 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import STATE_RUNNING
 import random
 import os
+import mysql.connector  # Import MySQL connector
+from mysql.connector import Error  # Import the Error exception class
 
 UPDATE_TIME_SECONDS = 5
 
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode="eventlet")
 
+# MySQL database connection parameters
+DB_CONFIG = {
+    'host': 'localhost',  # Host where MySQL is running
+    'port': 3306,         # MySQL port, default is 3306
+    'database': 'hanvest',  # Your database name
+}
+
+# Function to get MySQL database connection
+def get_db_connection():
+    try:
+        connection = mysql.connector.connect(**DB_CONFIG)
+        if connection.is_connected():
+            return connection
+    except Error as e:
+        app.logger.error(f"Error connecting to MySQL: {e}")
+        return None
+
+# Function to retrieve stock data from the database
+def get_stock_data_from_db():
+    connection = get_db_connection()
+    if connection:
+        cursor = connection.cursor(dictionary=True)
+        query = """
+        SELECT s.KodeName, s.Name, sp.Price 
+        FROM Stock s
+        JOIN StockDetail sd ON s.StockDetailID = sd.StockDetailID
+        JOIN StockPriceDetail sp ON sd.StockPriceDetailID = sp.StockPriceDetailID
+        """
+        cursor.execute(query)
+        stocks = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return stocks
+    return []
+
 # Example Stock data
-stock_data = [
-    Stock(name="GOTO", price=50),
-    Stock(name="BBCA", price=10000),
-    Stock(name="BBRI", price=2000),
-]
+stock_data = []
+
+# Function to simulate stock price changes
+# def update_stock_prices():
+#     index_stock_to_change = random.randint(0, len(stock_data) - 1)
+#     stock_data[index_stock_to_change].price += random.choice([-1, 1]) * random.randint(1, 3)
+
+#     stock_list = [stock.to_dict() for stock in stock_data]
+#     app.logger.info("Stock prices updated: %s", stock_list)
+
+#     # Ensure emit happens in Flask-SocketIO context
+#     with app.app_context():
+#         socketio.emit('update_stock', stock_list)
+#         socketio.emit('new_stock_event', "New Stock Event Triggered")
 
 # Function to simulate stock price changes
 def update_stock_prices():
-    index_stock_to_change = random.randint(0, len(stock_data) - 1)
-    stock_data[index_stock_to_change].price += random.choice([-1, 1]) * random.randint(1, 3)
+    stock_list = get_stock_data_from_db()
+    app.logger.info("Stock data: %s", stock_list)
 
-    stock_list = [stock.to_dict() for stock in stock_data]
-    app.logger.info("Stock prices updated: %s", stock_list)
-
-    # Ensure emit happens in Flask-SocketIO context
+    # Emit the updated stock list to all connected clients
     with app.app_context():
         socketio.emit('update_stock', stock_list)
         socketio.emit('new_stock_event', "New Stock Event Triggered")
