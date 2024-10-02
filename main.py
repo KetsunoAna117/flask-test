@@ -16,7 +16,7 @@ Below is Constant
 ================================================================================================
 '''
 
-UPDATE_TIME_SECONDS = 5
+UPDATE_TIME_SECONDS = 10
 
 '''
 ================================================================================================
@@ -77,8 +77,9 @@ from Domain.stock_price_handler import change_stock_price
 from Domain.stock_price_handler import fetch_news
 def update_stock_prices():
     news = fetch_news(connection_pool)
+    print("news: ", news)
     fetched_stock = change_stock_price(connection_pool, socketio, news)
-    print(fetched_stock)
+    print("fetched_stock: ", fetched_stock)
 
 
 '''
