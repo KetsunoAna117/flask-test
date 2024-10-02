@@ -35,7 +35,7 @@ connection_pool = psycopg2.pool.SimpleConnectionPool(
     1, 10, 
     user=os.getenv("DATABASE_USERNAME"), 
     password=os.getenv("DATABASE_PASSWORD"), 
-    host=os.getenv("localhost"), 
+    host=os.getenv("DATABASE_HOST"), 
     port=os.getenv("DATABASE_PORT"), 
     database=os.getenv("DATABASE_NAME")
 )
@@ -46,30 +46,39 @@ Business Logic
 ================================================================================================
 '''
 
-def update_stock_prices():
-    # Get a connection from the pool
-    conn = connection_pool.getconn()
+# def update_stock_prices():
+#     # Get a connection from the pool
+#     conn = connection_pool.getconn()
   
-    # create a cursor 
-    cur = conn.cursor() 
+#     # create a cursor 
+#     cur = conn.cursor() 
 
-    cur.execute('''SELECT * FROM stock''')
-    data = cur.fetchall()
+#     cur.execute('''SELECT * FROM stock WHERE stock_id = 1''')
+#     data = cur.fetchall()
 
-    # close connection
-    cur.close()
-    connection_pool.putconn(conn)  # return to the pool
+#     app.logger.info("Fetched Stock: %s", data)
 
-     # Get column names from the cursor
-    column_names = [desc[0] for desc in cur.description]
+#     # close connection
+#     cur.close()
+#     connection_pool.putconn(conn)  # return to the pool
 
-    # Convert the result into a list of dictionaries
-    stock_result = [dict(zip(column_names, row)) for row in data]
+#      # Get column names from the cursor
+#     column_names = [desc[0] for desc in cur.description]
 
-    # Ensure emit happens in Flask-SocketIO context
-    with app.app_context():
-        socketio.emit('update_stock', stock_result) # Emit the updated stock data
-        socketio.emit('new_stock_event', "New Stock Event Triggered")
+#     # Convert the result into a list of dictionaries
+#     stock_result = [dict(zip(column_names, row)) for row in data]
+
+#     # Ensure emit happens in Flask-SocketIO context
+#     with app.app_context():
+#         socketio.emit('update_stock', stock_result) # Emit the updated stock data
+#         socketio.emit('new_stock_event', "New Stock Event Triggered")
+
+from Domain.stock_price_handler import change_stock_price
+from Domain.stock_price_handler import fetch_news
+def update_stock_prices():
+    news = fetch_news(connection_pool)
+    fetched_stock = change_stock_price(connection_pool, socketio, news)
+    print(fetched_stock)
 
 
 '''
