@@ -8,6 +8,7 @@ from apscheduler.schedulers.base import STATE_RUNNING
 from dotenv import load_dotenv
 import os
 import psycopg2
+from psycopg2 import pool
 
 '''
 ================================================================================================
