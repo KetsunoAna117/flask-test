@@ -26,13 +26,13 @@ def get_random_news(connection_pool):
             
             # Choose a random news item from the list
             random_news = random.choice(news_data)
-            return random_news
             
-            # # Convert the selected news into a dictionary
-            # random_news_dict = dict(zip(column_names, random_news))
+            # Convert the selected news into a dictionary
+            random_news_dict = dict(zip(column_names, random_news))
         else:
-            # random_news_dict = {}
-            return None
+            random_news_dict = {}
+            
+        return random_news_dict
     
     except Exception as e:
         print(f"Error fetching random news: {e}")

@@ -31,7 +31,7 @@ def change_stock_price(connection_pool, socketIO, news):
     # create a cursor 
     cur = conn.cursor() 
 
-    cur.execute('''SELECT * FROM stock WHERE stock_id = %s''', (news[1],)) # psycopg2 only accepts tuples as parameters
+    cur.execute('''SELECT * FROM stock WHERE stock_id = %s''', (news.get('news_id'),)) # psycopg2 only accepts tuples as parameters
     stock = cur.fetchall()
 
     # Check if stock exists
@@ -42,13 +42,13 @@ def change_stock_price(connection_pool, socketIO, news):
         return None
     
     current_price = stock[FIRST_INDEX][STOCK_PRICE_INDEX] # Get the current stock price from the query result
-    percentage_change = news[NEWS_PRICE_CHANGE_INDEX]  # Get the percentage change from news[3] (assumed to be a float representing a percentage)
+    percentage_change = news.get('news_val_fluks')  # Get the percentage change from news tuple (assumed to be a float representing a percentage)
     target_price = int(current_price + (current_price * (percentage_change / 100))) # Calculate the target price based on the percentage change
     
     price_difference = target_price - current_price # Calculate the price difference
     price_change_per_second = int(price_difference / TOTAL_PRICE_CHANGE_SECONDS) # Calculate the price change per second
 
-    print(f"Current price: {current_price}, Target price: {target_price}, Price change per second: {price_change_per_second}")
+    print(f"Current price: {current_price}, Percentage Change: {percentage_change}, Target price: {target_price}, Price change per second: {price_change_per_second}")
 
     # Start the scheduler to update the stock price towards the target
     handle_scheduler(connection_pool, stock, socketIO, price_change_per_second)
@@ -102,6 +102,7 @@ def handle_price_change(connection_pool, socketIO, stock_id, current_stock_price
 
     # Emit the new stock price to the client
     to_send_stock = fetch_stock_from_db()
+    socketIO.emit('update_stock', to_send_stock)  # Emit the updated stock data
         
     print(f"Stock price updated to: {current_stock_price} at {handle_price_change.seconds_passed} seconds.")
 

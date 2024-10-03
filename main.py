@@ -71,8 +71,7 @@ def update_stock_prices():
     with app.app_context():
         news = get_random_news(connection_pool)
         print("news: ", news)
-        fetched_stock = change_stock_price(connection_pool, socketio, news)
-        print("fetched_stock: ", fetched_stock)
+        change_stock_price(connection_pool, socketio, news)
 
 
 '''
