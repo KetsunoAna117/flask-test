@@ -1,38 +1,85 @@
+import select
 import eventlet
 eventlet.monkey_patch()
 
 from flask import Flask, jsonify
 from flask_socketio import SocketIO, emit
-from Model.Stock import Stock
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import STATE_RUNNING
-import random
+
+from Domain.stock_news_handler import get_random_news
+from Repository.stock_repository import connection_pool
+
 import os
 
-UPDATE_TIME_SECONDS = 5
+'''
+================================================================================================
+Below is Constant
+================================================================================================
+'''
+
+UPDATE_TIME_SECONDS = 10
+
+'''
+================================================================================================
+Variables
+================================================================================================
+'''
 
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode="eventlet")
 
-# Example Stock data
-stock_data = [
-    Stock(name="GOTO", price=50),
-    Stock(name="BBCA", price=10000),
-    Stock(name="BBRI", price=2000),
-]
 
-# Function to simulate stock price changes
+
+'''
+================================================================================================
+Business Logic
+================================================================================================
+'''
+
+# def update_stock_prices():
+#     # Get a connection from the pool
+#     conn = connection_pool.getconn()
+  
+#     # create a cursor 
+#     cur = conn.cursor() 
+
+#     cur.execute('''SELECT * FROM stock WHERE stock_id = 1''')
+#     data = cur.fetchall()
+
+#     app.logger.info("Fetched Stock: %s", data)
+
+#     # close connection
+#     cur.close()
+#     connection_pool.putconn(conn)  # return to the pool
+
+#      # Get column names from the cursor
+#     column_names = [desc[0] for desc in cur.description]
+
+#     # Convert the result into a list of dictionaries
+#     stock_result = [dict(zip(column_names, row)) for row in data]
+
+#     # Ensure emit happens in Flask-SocketIO context
+#     with app.app_context():
+#         socketio.emit('update_stock', stock_result) # Emit the updated stock data
+#         socketio.emit('new_stock_event', "New Stock Event Triggered")
+
 def update_stock_prices():
-    index_stock_to_change = random.randint(0, len(stock_data) - 1)
-    stock_data[index_stock_to_change].price += random.choice([-1, 1]) * random.randint(1, 3)
-
-    stock_list = [stock.to_dict() for stock in stock_data]
-    app.logger.info("Stock prices updated: %s", stock_list)
-
-    # Ensure emit happens in Flask-SocketIO context
+    from Domain.stock_price_handler import change_stock_price 
+    from Domain.stock_news_handler import get_random_news
+    
     with app.app_context():
-        socketio.emit('update_stock', stock_list)
-        socketio.emit('new_stock_event', "New Stock Event Triggered")
+        news = get_random_news(connection_pool)
+        print("news: ", news)
+        fetched_stock = change_stock_price(connection_pool, socketio, news)
+        print("fetched_stock: ", fetched_stock)
+
+
+'''
+================================================================================================
+Scheduler Function
+================================================================================================
+'''
 
 # Initialize the scheduler
 scheduler = BackgroundScheduler()
@@ -41,19 +88,19 @@ scheduler.add_job(func=update_stock_prices, trigger="interval", seconds=UPDATE_T
 def start_scheduler_on_startup():
     if scheduler.state != STATE_RUNNING:
         scheduler.start()
-        print("Scheduler started.")
+        print("Scheduler from main started.")
     else:
-        print("Scheduler already running.")
+        print("Scheduler from main is already running.")
+
+'''
+================================================================================================
+Below is SocketIO function
+================================================================================================
+'''
 
 @socketio.on('connect')
 def handle_connect():
     print("Client connected")
-
-    # Optional: Add a small delay to ensure the client is ready to receive the event
-    socketio.sleep(1)  # Sleep for 1 second
-
-    stock_list = [stock.to_dict() for stock in stock_data]
-    socketio.emit('update_stock', stock_list)
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -65,12 +112,32 @@ def handle_user_input(data):
         socketio.emit('user_input_response', "Received user input: " + data)
     print("User input received: ", data)
 
+
+'''
+================================================================================================
+Below is HTTP function
+================================================================================================
+'''
+
 @app.route('/stock', methods=['GET'])
 def get_stock():
-    stock_list = [stock.to_dict() for stock in stock_data]
-    return jsonify(stock_list)
+    from Repository.stock_repository import fetch_stock_from_db
+    stock_result = fetch_stock_from_db()
+
+    return jsonify(stock_result)
+
+@app.route('/random_news', methods=['GET'])
+def random_news():
+    news_item = get_random_news()
+    return jsonify(news_item)
+
+'''
+================================================================================================
+Init Function
+================================================================================================
+'''
 
 if __name__ == '__main__':
     start_scheduler_on_startup()
     port_ws = int(os.environ.get("PORT", 5001))
-    socketio.run(app, debug=True, port=port_ws, use_reloader=False)
+    socketio.run(app, debug=False, port=port_ws, use_reloader=False)
