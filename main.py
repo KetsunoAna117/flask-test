@@ -1,3 +1,4 @@
+import select
 import eventlet
 eventlet.monkey_patch()
 
@@ -76,10 +77,11 @@ Business Logic
 def update_stock_prices():
     from Domain.stock_price_handler import fetch_news, change_stock_price 
     
-    news = fetch_news(connection_pool)
-    print("news: ", news)
-    fetched_stock = change_stock_price(connection_pool, socketio, news)
-    print("fetched_stock: ", fetched_stock)
+    with app.app_context():
+        news = fetch_news(connection_pool)
+        print("news: ", news)
+        fetched_stock = change_stock_price(connection_pool, socketio, news)
+        print("fetched_stock: ", fetched_stock)
 
 
 '''
