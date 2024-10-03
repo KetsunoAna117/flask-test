@@ -98,9 +98,9 @@ scheduler.add_job(func=update_stock_prices, trigger="interval", seconds=UPDATE_T
 def start_scheduler_on_startup():
     if scheduler.state != STATE_RUNNING:
         scheduler.start()
-        print("Scheduler started.")
+        print("Scheduler from main started.")
     else:
-        print("Scheduler already running.")
+        print("Scheduler from main is already running.")
 
 '''
 ================================================================================================

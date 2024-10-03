@@ -127,14 +127,14 @@ def handle_price_change(connection_pool, stock_id, current_stock_price, price_ch
 def start_scheduler(scheduler):
     if scheduler.state != STATE_RUNNING:
         scheduler.start()
-        print("Scheduler started.")
+        print("Scheduler for price changing started.")
     else:
-        print("Scheduler already running.")
+        print("Scheduler for price changing is already running.")
 
 def stop_scheduler(scheduler):
     if scheduler.state == STATE_RUNNING:
         scheduler.shutdown(wait=False)  # Don't wait for running jobs to finish
-        print("Scheduler stopped.")
+        print("Scheduler for price changing stopped.")
     else:
-        print("Scheduler already stopped.")
+        print("Scheduler for price changing has been already stopped.")
 
