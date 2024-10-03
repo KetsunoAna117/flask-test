@@ -1,3 +1,4 @@
+import select
 import eventlet
 eventlet.monkey_patch()
 
@@ -6,6 +7,7 @@ from flask_socketio import SocketIO, emit
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import STATE_RUNNING
 from dotenv import load_dotenv
+from Domain.stock_news_handler import get_random_news
 import os
 import psycopg2
 from psycopg2 import pool
@@ -53,6 +55,10 @@ def update_stock_prices():
     # create a cursor 
     cur = conn.cursor() 
 
+    # Emit random news
+    random_news_item = get_random_news(connection_pool)
+    print("Random News Item:", random_news_item)
+
     cur.execute('''SELECT * FROM stock''')
     data = cur.fetchall()
 
@@ -69,6 +75,7 @@ def update_stock_prices():
     # Ensure emit happens in Flask-SocketIO context
     with app.app_context():
         socketio.emit('update_stock', stock_result) # Emit the updated stock data
+        socketio.emit('random_news', random_news_item)  # Emit a random news item
         socketio.emit('new_stock_event', "New Stock Event Triggered")
 
 
@@ -138,6 +145,12 @@ def get_stock():
     stock_result = [dict(zip(column_names, row)) for row in data]
 
     return jsonify(stock_result)
+
+@app.route('/random_news', methods=['GET'])
+def random_news():
+    news_item = get_random_news()
+    return jsonify(news_item)
+
 '''
 ================================================================================================
 Init Function
@@ -147,4 +160,4 @@ Init Function
 if __name__ == '__main__':
     start_scheduler_on_startup()
     port_ws = int(os.environ.get("PORT", 5001))
-    socketio.run(app, debug=True, port=port_ws, use_reloader=False)
+    socketio.run(app, debug=False, port=port_ws, use_reloader=False)
