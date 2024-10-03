@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import STATE_RUNNING
-import time
+from Repository.stock_repository import fetch_stock_from_db
 
 # Constants
 UPDATE_STOCK_PRICE_SECONDS = 1 # The interval to update the stock price in seconds
@@ -13,26 +13,14 @@ STOCK_PRICE_INDEX = 5  # The index of the stock price in the query result
 NEWS_PRICE_CHANGE_INDEX = 3  # The index of the price change in the news data
 FIRST_INDEX = 0  # The first index in a list
 
-# Temp function to fetch news
-# This function will be replaced with actual implementation
-def fetch_news(connection_pool):
-    # Get a connection from the pool
-    conn = connection_pool.getconn()
-
-    # create a cursor 
-    cur = conn.cursor() 
-
-    cur.execute('''SELECT * FROM news''')
-    data = cur.fetchall()
-
-    # close connection
-    cur.close()
-    connection_pool.putconn(conn)  # return to the pool
-
-    return data[FIRST_INDEX]
-
-# This function will change the stock price periodically based on the news
 def change_stock_price(connection_pool, socketIO, news):
+    """
+    Function to change stock price based on the news data.
+    
+    Returns:
+        NONE
+    """
+        
     if news is None:
         print("No news data available.")
         return None
@@ -69,8 +57,6 @@ def change_stock_price(connection_pool, socketIO, news):
     cur.close()
     connection_pool.putconn(conn)  # return to the pool
 
-    return stock
-
 def handle_scheduler(connection_pool, stock, socketIO, price_change_per_second):
     stock_id = stock[FIRST_INDEX][FIRST_INDEX]  # Assuming the stock_id is at the first index
     current_stock_price = [stock[FIRST_INDEX][STOCK_PRICE_INDEX]]  # Get the current stock price
@@ -78,7 +64,7 @@ def handle_scheduler(connection_pool, stock, socketIO, price_change_per_second):
     scheduler = BackgroundScheduler()
 
     # Add the job to change stock price every 1 second, passing arguments
-    scheduler.add_job(func=handle_price_change, args=[connection_pool, stock_id, current_stock_price, price_change_per_second, scheduler], 
+    scheduler.add_job(func=handle_price_change, args=[connection_pool, socketIO, stock_id, current_stock_price, price_change_per_second, scheduler], 
                     trigger="interval", seconds=UPDATE_STOCK_PRICE_SECONDS, 
                     id="price_change_job", max_instances=1)
         
@@ -86,7 +72,7 @@ def handle_scheduler(connection_pool, stock, socketIO, price_change_per_second):
     start_scheduler(scheduler)
 
 
-def handle_price_change(connection_pool, stock_id, current_stock_price, price_change_per_second, scheduler):
+def handle_price_change(connection_pool, socketIO, stock_id, current_stock_price, price_change_per_second, scheduler):
     # Track how many seconds have passed
     if not hasattr(handle_price_change, 'seconds_passed'):
         handle_price_change.seconds_passed = SECONDS_START_RUNNING  # Initialize if not already set
@@ -115,8 +101,8 @@ def handle_price_change(connection_pool, stock_id, current_stock_price, price_ch
     connection_pool.putconn(conn)  # return to the pool
 
     # Emit the new stock price to the client
-    # socketIO.emit("stock_price_change", {"stock_id": stock_id, "stock_price": current_stock_price})
-
+    to_send_stock = fetch_stock_from_db()
+        
     print(f"Stock price updated to: {current_stock_price} at {handle_price_change.seconds_passed} seconds.")
 
     # Increment the seconds passed

@@ -6,11 +6,11 @@ from flask import Flask, jsonify
 from flask_socketio import SocketIO, emit
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import STATE_RUNNING
-from dotenv import load_dotenv
+
 from Domain.stock_news_handler import get_random_news
+from Repository.stock_repository import connection_pool
+
 import os
-import psycopg2
-from psycopg2 import pool
 
 '''
 ================================================================================================
@@ -29,18 +29,7 @@ Variables
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode="eventlet")
 
-# Load environtment variables
-load_dotenv()
 
-# Initialize a connection pool globally (size 1-10 connections)
-connection_pool = psycopg2.pool.SimpleConnectionPool(
-    1, 10, 
-    user=os.getenv("DATABASE_USERNAME"), 
-    password=os.getenv("DATABASE_PASSWORD"), 
-    host=os.getenv("DATABASE_HOST"), 
-    port=os.getenv("DATABASE_PORT"), 
-    database=os.getenv("DATABASE_NAME")
-)
 
 '''
 ================================================================================================
@@ -81,7 +70,7 @@ def update_stock_prices():
     with app.app_context():
         news = fetch_news(connection_pool)
         print("news: ", news)
-        fetched_stock = change_stock_price(connection_pool, socketio, news)
+        fetched_stock = change_stock_price(app, connection_pool, socketio, news)
         print("fetched_stock: ", fetched_stock)
 
 
@@ -131,24 +120,8 @@ Below is HTTP function
 
 @app.route('/stock', methods=['GET'])
 def get_stock():
-     # Get a connection from the pool
-    conn = connection_pool.getconn()
-  
-    # create a cursor 
-    cur = conn.cursor() 
-
-    cur.execute('''SELECT * FROM stock''')
-    data = cur.fetchall()
-
-    # close connection
-    cur.close()
-    connection_pool.putconn(conn)  # return to the pool
-
-    # Get column names from the cursor
-    column_names = [desc[0] for desc in cur.description]
-
-    # Convert the result into a list of dictionaries
-    stock_result = [dict(zip(column_names, row)) for row in data]
+    from Repository.stock_repository import fetch_stock_from_db
+    stock_result = fetch_stock_from_db()
 
     return jsonify(stock_result)
 
