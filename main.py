@@ -65,12 +65,13 @@ Business Logic
 #         socketio.emit('new_stock_event', "New Stock Event Triggered")
 
 def update_stock_prices():
-    from Domain.stock_price_handler import fetch_news, change_stock_price 
+    from Domain.stock_price_handler import change_stock_price 
+    from Domain.stock_news_handler import get_random_news
     
     with app.app_context():
-        news = fetch_news(connection_pool)
+        news = get_random_news(connection_pool)
         print("news: ", news)
-        fetched_stock = change_stock_price(app, connection_pool, socketio, news)
+        fetched_stock = change_stock_price(connection_pool, socketio, news)
         print("fetched_stock: ", fetched_stock)
 
 
