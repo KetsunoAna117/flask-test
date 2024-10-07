@@ -10,7 +10,7 @@ SECONDS_START_RUNNING = 0  # The seconds to start running the scheduler
 TOTAL_PRICE_CHANGE_SECONDS = 5  # The total time for the price change to happen in seconds
 
 STOCK_PRICE_INDEX = 5  # The index of the stock price in the query result
-NEWS_PRICE_CHANGE_INDEX = 3  # The index of the price change in the news data
+NEWS_PRICE_CHANGE_INDEX = 4  # The index of the price change in the news data
 FIRST_INDEX = 0  # The first index in a list
 
 def change_stock_price(connection_pool, socketIO, news):

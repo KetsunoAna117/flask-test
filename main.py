@@ -69,7 +69,7 @@ def update_stock_prices():
     from Domain.stock_news_handler import get_random_news
     
     with app.app_context():
-        news = get_random_news(connection_pool)
+        news = get_random_news()
         print("news: ", news)
         change_stock_price(connection_pool, socketio, news)
 
