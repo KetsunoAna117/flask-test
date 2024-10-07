@@ -1,5 +1,5 @@
 import random
-from Repository.news_respository import fetch_news_from_db
+from Repository.news_respository import fetch_all_news_from_db
 
 def get_random_news():
     """
@@ -10,7 +10,7 @@ def get_random_news():
     """
     
     # Fetch all news from the database
-    news_data = fetch_news_from_db()
+    news_data = fetch_all_news_from_db()
     
     # If there is data in the news table, choose a random entry
     if news_data:

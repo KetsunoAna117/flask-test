@@ -1,13 +1,13 @@
 from Repository.service import connection_pool
 
-def create_news_in_db(stock_id, news_description, news_val_fluks):
+def create_news_in_db(stock_id, news_description, news_value_fluctuation):
     """
     Function to create a new news entry in the 'news' table.
 
     Args:
         stock_id (int): The ID of the stock related to the news.
         news_description (str): The description of the news.
-        news_val_fluks (int): The value fluctuation associated with the news.
+        news_value_fluctuation (int): The value fluctuation associated with the news.
     
     Returns:
         bool: True if the insertion was successful, False otherwise.
@@ -22,12 +22,12 @@ def create_news_in_db(stock_id, news_description, news_val_fluks):
         
         # SQL query to insert a new row into the news table
         query = '''
-        INSERT INTO news (stock_id, news_description, news_val_fluks)
+        INSERT INTO news (stock_id, news_description, news_value_fluctuation)
         VALUES (%s, %s, %s);
         '''
         
         # Execute the insert query with the provided values
-        cur.execute(query, (stock_id, news_description, news_val_fluks))
+        cur.execute(query, (stock_id, news_description, news_value_fluctuation))
         
         # Commit the insertion
         conn.commit()
@@ -46,7 +46,58 @@ def create_news_in_db(stock_id, news_description, news_val_fluks):
         connection_pool.putconn(conn)
 
 
-def fetch_news_from_db():
+def fetch_news_by_news_id(news_id):
+    """
+    Function to retrieve a specific news item by news_id from the 'news' table.
+
+    Args:
+        news_id (int): The ID of the news item to fetch.
+
+    Returns:
+        dict: A dictionary representing the news item if found, otherwise None.
+    """
+    
+    # Get a connection from the pool
+    conn = connection_pool.getconn()
+    
+    try:
+        # create a cursor 
+        cur = conn.cursor()
+
+        # SQL query to fetch a news item by its ID
+        query = '''
+        SELECT * FROM news
+        WHERE news_id = %s;
+        '''
+        
+        # Execute the query to fetch the specific news item
+        cur.execute(query, (news_id,))
+        news_data = cur.fetchone()
+        
+        # If no news is found, return None
+        if not news_data:
+            print(f"No news found with news_id {news_id}")
+            return None
+        
+        # Get column names from the cursor
+        column_names = [desc[0] for desc in cur.description]
+        
+        # Convert the result into a dictionary
+        news_result = dict(zip(column_names, news_data))
+        
+        return news_result
+    
+    except Exception as e:
+        print(f"Error fetching news with news_id {news_id} from database: {e}")
+        return None
+    
+    finally:
+        # Always ensure that the connection is returned to the pool
+        cur.close()
+        connection_pool.putconn(conn)
+
+
+def fetch_all_news_from_db():
     """
     Function to retrieve all news from the 'news' table.
 
@@ -88,7 +139,7 @@ def fetch_news_from_db():
         connection_pool.putconn(conn)
 
 
-def update_news_in_db(news_id, stock_id, news_description, news_val_fluks):
+def update_news_in_db_by_news_id(news_id, stock_id, news_description, news_value_fluctuation):
     """
     Function to update a news entry in the 'news' table based on the news_id.
 
@@ -96,7 +147,7 @@ def update_news_in_db(news_id, stock_id, news_description, news_val_fluks):
         news_id (int): The ID of the news item to update.
         stock_id (int): The stock ID associated with the news.
         news_description (str): The updated news description.
-        news_val_fluks (int): The updated news value fluctuation.
+        news_value_fluctuation (int): The updated news value fluctuation.
 
     Returns:
         bool: True if the update was successful, False otherwise.
@@ -112,12 +163,12 @@ def update_news_in_db(news_id, stock_id, news_description, news_val_fluks):
         # SQL query to update the news entry
         query = '''
         UPDATE news
-        SET stock_id = %s, news_description = %s, news_val_fluks = %s
+        SET stock_id = %s, news_description = %s, news_value_fluctuation = %s
         WHERE news_id = %s;
         '''
         
         # Execute the update query with the given parameters
-        cur.execute(query, (stock_id, news_description, news_val_fluks, news_id))
+        cur.execute(query, (stock_id, news_description, news_value_fluctuation, news_id))
         
         # Commit the changes
         conn.commit()
@@ -136,7 +187,7 @@ def update_news_in_db(news_id, stock_id, news_description, news_val_fluks):
         connection_pool.putconn(conn)
 
 
-def delete_news_from_db(news_id):
+def delete_news_from_db_by_news_id(news_id):
     """
     Function to delete a news entry from the 'news' table based on the news_id.
 
