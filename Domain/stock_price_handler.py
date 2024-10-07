@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import STATE_RUNNING
-from Repository.stock_repository import fetch_stock_from_db
+from Repository.stock_repository import fetch_all_stock_from_db
 
 # Constants
 UPDATE_STOCK_PRICE_SECONDS = 1 # The interval to update the stock price in seconds
@@ -101,7 +101,7 @@ def handle_price_change(connection_pool, socketIO, stock_id, current_stock_price
     connection_pool.putconn(conn)  # return to the pool
 
     # Emit the new stock price to the client
-    to_send_stock = fetch_stock_from_db()
+    to_send_stock = fetch_all_stock_from_db()
     socketIO.emit('update_stock', to_send_stock)  # Emit the updated stock data
         
     print(f"Stock price updated to: {current_stock_price} at {handle_price_change.seconds_passed} seconds.")
