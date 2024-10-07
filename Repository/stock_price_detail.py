@@ -1,6 +1,6 @@
 from Repository.service import connection_pool
 
-def create_stock_price_detail(stock_id, stock_date, stock_price, stock_price_time):
+def create_stock_price_detail(stock_id: int, stock_date: str, stock_price: int, stock_price_time: str):
     """
     Function to create a new row in the stock_price_detail table using stock_id and stock_date.
 

@@ -8,7 +8,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import STATE_RUNNING
 
 from Domain.stock_news_handler import get_random_news
-from Repository.stock_repository import connection_pool
 
 import os
 
@@ -18,7 +17,7 @@ Below is Constant
 ================================================================================================
 '''
 
-UPDATE_TIME_SECONDS = 10
+UPDATE_TIME_SECONDS = 20
 
 '''
 ================================================================================================
@@ -37,33 +36,6 @@ Business Logic
 ================================================================================================
 '''
 
-# def update_stock_prices():
-#     # Get a connection from the pool
-#     conn = connection_pool.getconn()
-  
-#     # create a cursor 
-#     cur = conn.cursor() 
-
-#     cur.execute('''SELECT * FROM stock WHERE stock_id = 1''')
-#     data = cur.fetchall()
-
-#     app.logger.info("Fetched Stock: %s", data)
-
-#     # close connection
-#     cur.close()
-#     connection_pool.putconn(conn)  # return to the pool
-
-#      # Get column names from the cursor
-#     column_names = [desc[0] for desc in cur.description]
-
-#     # Convert the result into a list of dictionaries
-#     stock_result = [dict(zip(column_names, row)) for row in data]
-
-#     # Ensure emit happens in Flask-SocketIO context
-#     with app.app_context():
-#         socketio.emit('update_stock', stock_result) # Emit the updated stock data
-#         socketio.emit('new_stock_event', "New Stock Event Triggered")
-
 def update_stock_prices():
     from Domain.stock_price_handler import change_stock_price 
     from Domain.stock_news_handler import get_random_news
@@ -71,7 +43,7 @@ def update_stock_prices():
     with app.app_context():
         news = get_random_news()
         print("news: ", news)
-        change_stock_price(connection_pool, socketio, news)
+        change_stock_price(socketio, news)
 
 
 '''
@@ -120,10 +92,10 @@ Below is HTTP function
 
 @app.route('/stock', methods=['GET'])
 def get_stock():
-    from Repository.stock_repository import fetch_stock_from_db
-    stock_result = fetch_stock_from_db()
+    from Domain.stock_data_client_sender import map_stock_data_to_client
 
-    return jsonify(stock_result)
+    to_send_stock_data = map_stock_data_to_client()
+    return jsonify(to_send_stock_data)
 
 @app.route('/random_news', methods=['GET'])
 def random_news():
