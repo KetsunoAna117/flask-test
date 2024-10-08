@@ -1,7 +1,7 @@
 from Repository.service import connection_pool
 
 #disini gw ga bikin kalo datanya gak ada di database ya untuk stock detailnya, gw asumsi setiap stock pasti ada stock detail nya nanti pas populate db
-def create_new_stock_detail(stock_id):
+def create_new_stock_detail(stock_id, stock_date):
     """
     Function to create a new stock_detail entry for a specific stock_id.
     
@@ -18,12 +18,6 @@ def create_new_stock_detail(stock_id):
     
     # Fetch the last price for the latest stock day using the fetch_last_price_for_latest_day function
     last_price = fetch_last_price_for_latest_day_by_stock_id(stock_id)
-
-    # Fetch the latest stock day for the given stock_id
-    latest_stock_date = fetch_latest_stock_date_by_stock_id(stock_id)
-
-    # new stock day that will be added to the new row of stock_detail table
-    new_stock_date = latest_stock_date + 1 
     
     # Get a connection from the pool
     conn = connection_pool.getconn()
@@ -39,12 +33,12 @@ def create_new_stock_detail(stock_id):
         '''
         
         # Execute the insert query
-        cur.execute(query, (stock_id, new_stock_date, 0, 0, last_price, 0))
+        cur.execute(query, (stock_id, stock_date, 0, 0, last_price, 0))
         
         # Commit the insertion
         conn.commit()
         
-        print(f"Stock detail entry created successfully for stock_id {stock_id} on day {new_stock_date}.")
+        print(f"Stock detail entry created successfully for stock_id {stock_id} on day {stock_date}.")
         return True  # Insertion was successful
     
     except Exception as e:

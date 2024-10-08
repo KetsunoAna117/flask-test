@@ -1,4 +1,5 @@
 from Repository.service import connection_pool
+from datetime import time
 
 def create_stock_price_detail(stock_id: int, stock_date: str, stock_price: int, stock_price_time: str):
     """
@@ -15,14 +16,31 @@ def create_stock_price_detail(stock_id: int, stock_date: str, stock_price: int, 
     """
     
     # Import the necessary function that is needed to be called
-    from Repository.stock_detail_repository import fetch_stock_detail_id_by_stock_id_and_date
+    from Repository.stock_detail_repository import create_new_stock_detail, fetch_stock_detail_id_by_stock_id_and_date
     
     # Fetch the stock_detail_id based on stock_id and stock_date
     stock_detail_id = fetch_stock_detail_id_by_stock_id_and_date(stock_id, stock_date)
     
     if stock_detail_id is None:
-        print(f"Error: No stock_detail found for stock_id {stock_id} on day {stock_date}.")
-        return False  # Cannot insert if no stock_detail_id found
+        print(f"Error: No stock_detail found for stock_id {stock_id} on day {stock_date}. Creating a new stock_detail_id!")
+        create_new_stock_detail(stock_id, stock_date)
+
+        # Refetch the stock_detail_id based on stock_id and stock_date
+        stock_detail_id = fetch_stock_detail_id_by_stock_id_and_date(stock_id, stock_date)
+
+        if stock_detail_id is None:
+            print(f"Error: No stock_detail found for stock_id {stock_id} on day {stock_date} after inserting a new one.")
+            return False  # No stock_detail_id found
+
+    # Validate the stock_price
+    if stock_price < 0:
+        print("Error: Stock price cannot be negative.")
+        return False  # Exit if stock price is invalid
+    
+    # Validate that stock_price_time is a valid datetime.time object
+    if not isinstance(stock_price_time, time):
+        print(f"Error: Invalid type for stock_price_time: {stock_price_time}. Expected a datetime.time object.")
+        return False  # Exit if time format is invalid
     
     # Proceed to insert into stock_price_detail using stock_detail_id
     conn = connection_pool.getconn()

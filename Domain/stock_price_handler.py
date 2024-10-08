@@ -4,7 +4,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import STATE_RUNNING
 
 from Repository.stock_repository import fetch_stock_by_stock_id
-from Repository.stock_price_detail import fetch_last_price, create_stock_price_detail
+from Repository.stock_price_detail import create_stock_price_detail
+from Repository.stock_detail_repository import fetch_last_price_for_latest_day_by_stock_id
 
 from Domain.server_date_handler import get_current_date, get_current_time
 from Domain.stock_data_client_sender import map_stock_data_to_client
@@ -36,7 +37,7 @@ def change_stock_price(socketIO, news):
     
     stock_id = news.get('stock_id')  # Get the stock_id from the news data
     
-    current_price = fetch_last_price(stock_id, get_current_date()) # Get the current stock price from the query result
+    current_price = fetch_last_price_for_latest_day_by_stock_id(stock_id) # Get the current last stock price from the day before
     percentage_change = news.get('news_value_fluctuation')  # Get the percentage change from news tuple (assumed to be a float representing a percentage)
     target_price = int(current_price + (current_price * (percentage_change / 100))) # Calculate the target price based on the percentage change
     
@@ -80,8 +81,8 @@ def handle_price_change(stock_id: int, socketIO, current_stock_price: dict, pric
     # Calculate the new stock price
     current_stock_price['current_price'] += price_change_per_second
 
-    # TODO: Uncomment this function below to push the updated stock price in the database
-    # create_stock_price_detail(stock_id, get_current_date(), current_stock_price['current_price'], get_current_time())
+    # Push the updated stock price to the database
+    create_stock_price_detail(stock_id, get_current_date(), current_stock_price['current_price'], get_current_time())
 
     to_send_stock = map_stock_data_to_client()  # Get the updated stock data to send to the client
     socketIO.emit('update_stock', to_send_stock)  # Emit the updated stock data
